@@ -2,7 +2,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Bookmark, Highlight } from "lucide-react";
+import { Bookmark, Highlighter } from "lucide-react";
 import type { BibleData, BiblePassageVerse } from "@/services/types";
 
 interface PassageDisplayProps {
@@ -91,7 +91,7 @@ export function PassageDisplay({
                   onClick={() => handleHighlight(verse)}
                   className="h-8 w-8 p-0"
                 >
-                  <Highlight className="h-4 w-4" />
+                  <Highlighter className="h-4 w-4" />
                 </Button>
               </div>
             </div>
