@@ -1,3 +1,4 @@
+
 import { getPassage } from './localBibleService';
 import { availableVersions } from './bibleDataLoader';
 import { BibleVerse, BiblePassageResponse, BibleVersion } from './types';
@@ -22,6 +23,7 @@ export const fetchBiblePassage = async (
       };
     }
 
+    // Use local service exclusively to avoid CORS issues
     const response = await getPassage(reference, version);
     
     // Add more detailed error messages
@@ -78,6 +80,46 @@ export const getAvailableChapters = async (
     return chapters.sort((a, b) => a - b);
   } catch (error) {
     console.error('Error loading chapters:', error);
+    return [];
+  }
+};
+
+// Search functionality
+export const searchBible = async (
+  query: string,
+  version: string = 'kjv',
+  limit: number = 50
+): Promise<any[]> => {
+  try {
+    const data = await import(`../../bible_data/${version}.json`);
+    const results: any[] = [];
+    
+    const searchTerm = query.toLowerCase();
+    
+    for (const book of data.books) {
+      for (const chapter of book.chapters) {
+        for (const verse of chapter.verses) {
+          if (verse.text.toLowerCase().includes(searchTerm)) {
+            results.push({
+              reference: `${book.name} ${chapter.chapter}:${verse.verse}`,
+              book: book.name,
+              chapter: chapter.chapter,
+              verse: verse.verse,
+              text: verse.text,
+              score: 1 // Simple relevance score
+            });
+            
+            if (results.length >= limit) {
+              return results;
+            }
+          }
+        }
+      }
+    }
+    
+    return results;
+  } catch (error) {
+    console.error('Error searching Bible:', error);
     return [];
   }
 };

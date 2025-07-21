@@ -1,19 +1,13 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { useToast } from '@/components/ui/use-toast';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Types
-type User = {
-  id: string;
-  email: string;
-  user_metadata?: {
-    full_name?: string;
-  };
-};
-
 type AuthContextType = {
   user: User | null;
+  session: Session | null;
   isLoading: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -21,66 +15,70 @@ type AuthContextType = {
   resetPassword: (email: string) => Promise<void>;
 };
 
-// Create Supabase client with direct URL and key
-const supabaseUrl = "https://pvhtxtterldqbrumozqn.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2aHR4dHRlcmxkcWJydW1venFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyOTYxMzMsImV4cCI6MjA2MTg3MjEzM30.KLo6_Pah5NS2syI44XaGemnlEeFJ-pL2X0B8TMkH8Ts";
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 // Create context
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Cleanup function to prevent auth limbo states
+const cleanupAuthState = () => {
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  Object.keys(sessionStorage || {}).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      sessionStorage.removeItem(key);
+    }
+  });
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
-    // Check for existing session
-    const checkUser = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error fetching session:', error);
-          return;
-        }
-        
-        if (data.session) {
-          const { data: userData } = await supabase.auth.getUser();
-          setUser(userData.user as User);
-        }
-      } catch (error) {
-        console.error('Error checking authentication:', error);
-      } finally {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
         setIsLoading(false);
       }
-    };
+    );
 
-    // Set up listener for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        setUser(session.user as User);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-      }
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
     });
 
-    checkUser();
-    
-    // Cleanup
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
       setIsLoading(true);
+      
+      // Clean up existing state
+      cleanupAuthState();
+      
+      // Attempt global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+      
+      const redirectUrl = `${window.location.origin}/`;
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName || '',
           },
@@ -89,14 +87,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       
-      toast({
-        title: 'Account created!',
+      toast.success('Account created!', {
         description: 'Please check your email for verification instructions.',
       });
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign up failed',
+      toast.error('Sign up failed', {
         description: error.message || 'An error occurred during sign up',
       });
       throw error;
@@ -108,6 +103,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      
+      // Clean up existing state
+      cleanupAuthState();
+      
+      // Attempt global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+      
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -115,14 +121,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       
-      toast({
-        title: 'Welcome back!',
+      toast.success('Welcome back!', {
         description: 'You have successfully signed in.',
       });
+      
+      // Force page reload for clean state
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign in failed',
+      toast.error('Sign in failed', {
         description: error.message || 'Invalid email or password',
       });
       throw error;
@@ -134,17 +142,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
       
-      toast({
-        title: 'Signed out',
+      // Clean up auth state
+      cleanupAuthState();
+      
+      // Attempt global sign out
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Ignore errors
+      }
+      
+      toast.success('Signed out', {
         description: 'You have been successfully signed out.',
       });
+      
+      // Force page reload for clean state
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
+      toast.error('Error', {
         description: error.message || 'Error signing out',
       });
     } finally {
@@ -155,17 +173,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetPassword = async (email: string) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       if (error) throw error;
       
-      toast({
-        title: 'Password reset email sent',
+      toast.success('Password reset email sent', {
         description: 'Please check your email for password reset instructions.',
       });
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
+      toast.error('Error', {
         description: error.message || 'Error sending password reset email',
       });
     } finally {
@@ -175,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider 
-      value={{ user, isLoading, signUp, signIn, signOut, resetPassword }}
+      value={{ user, session, isLoading, signUp, signIn, signOut, resetPassword }}
     >
       {children}
     </AuthContext.Provider>
