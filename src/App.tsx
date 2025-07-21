@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import BibleReaderPage from "./pages/BibleReaderPage";
 import NotFound from "./pages/NotFound";
+import { AuthPage } from "./pages/AuthPage";
 
 // Add global CSS for dark mode
 import "./styles/dark-mode.css";
@@ -36,6 +37,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/bible" element={<BibleReaderPage />} />
+              <Route path="/auth" element={<AuthPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
