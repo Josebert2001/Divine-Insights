@@ -54,6 +54,6 @@ export function useReadingPlan(planId?: string) {
     currentPlan,
     progress,
     markDayComplete: markDayComplete.mutate,
-    isLoading: initPlans.isLoading,
+    isLoading: initPlans.isPending,
   };
 }

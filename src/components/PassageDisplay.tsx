@@ -21,8 +21,8 @@ export function PassageDisplay({
         isImmersiveMode && "max-w-2xl mx-auto",
         isDarkTheme ? "text-gray-200" : "text-gray-700"
       )}>
-        {verses.map((verse) => (
-          <p key={verse.id} className="leading-relaxed">
+        {verses.map((verse, index) => (
+          <p key={`${verse.book_id}-${verse.chapter}-${verse.verse}`} className="leading-relaxed">
             <sup className="mr-1 text-xs text-gray-500">
               {verse.verse}
             </sup>

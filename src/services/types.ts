@@ -78,3 +78,25 @@ export interface UserProgress {
   startDate: string;
   lastReadDate?: string;
 }
+
+// Additional types for Bible Reader components
+export interface CrossReference {
+  reference: string;
+  text: string;
+}
+
+export interface VerseAnnotation {
+  id: string;
+  reference: string;
+  type: 'note' | 'highlight' | 'bookmark';
+  content?: string;
+  color?: string;
+  createdAt: string;
+}
+
+export interface ReadingEntry {
+  id: string;
+  date: string;
+  references: string[];
+  completed: boolean;
+}

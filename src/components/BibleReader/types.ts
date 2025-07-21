@@ -1,3 +1,6 @@
+// Import types first
+import type { BibleData } from '@/services/types';
+
 // Common types used across components
 export interface BibleReaderProps {
   initialReference?: string;

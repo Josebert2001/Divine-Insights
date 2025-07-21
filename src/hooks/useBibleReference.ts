@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { getAvailableBooks, getAvailableChapters } from '@/services/localBibleService';
 import { useQuery } from '@tanstack/react-query';
 
@@ -21,7 +21,7 @@ export function useBibleReference(initialReference: string) {
 
   const { data: availableBooks = [] } = useQuery({
     queryKey: ['availableBooks'],
-    queryFn: getAvailableBooks,
+    queryFn: () => getAvailableBooks(),
     staleTime: Infinity
   });
 
@@ -37,8 +37,7 @@ export function useBibleReference(initialReference: string) {
       
       // Reset chapter if book changes
       if (newRef.book && newRef.book !== prev.book) {
-        const chaptersInBook = getAvailableChapters(newRef.book);
-        updated.chapter = chaptersInBook[0] || '1';
+        updated.chapter = '1';
         updated.verse = undefined;
       }
       
@@ -47,31 +46,29 @@ export function useBibleReference(initialReference: string) {
   }, []);
 
   const nextChapter = useCallback(() => {
-    const currentChapterIndex = availableChapters.indexOf(reference.chapter);
+    const currentChapterIndex = availableChapters.indexOf(parseInt(reference.chapter));
     if (currentChapterIndex < availableChapters.length - 1) {
-      updateReference({ chapter: availableChapters[currentChapterIndex + 1] });
+      updateReference({ chapter: availableChapters[currentChapterIndex + 1].toString() });
     } else {
       const currentBookIndex = availableBooks.indexOf(reference.book);
       if (currentBookIndex < availableBooks.length - 1) {
         const nextBook = availableBooks[currentBookIndex + 1];
-        const nextBookChapters = getAvailableChapters(nextBook);
-        updateReference({ book: nextBook, chapter: nextBookChapters[0] });
+        updateReference({ book: nextBook, chapter: '1' });
       }
     }
   }, [reference.book, reference.chapter, availableBooks, availableChapters, updateReference]);
 
   const previousChapter = useCallback(() => {
-    const currentChapterIndex = availableChapters.indexOf(reference.chapter);
+    const currentChapterIndex = availableChapters.indexOf(parseInt(reference.chapter));
     if (currentChapterIndex > 0) {
-      updateReference({ chapter: availableChapters[currentChapterIndex - 1] });
+      updateReference({ chapter: availableChapters[currentChapterIndex - 1].toString() });
     } else {
       const currentBookIndex = availableBooks.indexOf(reference.book);
       if (currentBookIndex > 0) {
         const prevBook = availableBooks[currentBookIndex - 1];
-        const prevBookChapters = getAvailableChapters(prevBook);
         updateReference({ 
           book: prevBook, 
-          chapter: prevBookChapters[prevBookChapters.length - 1] 
+          chapter: '1'
         });
       }
     }

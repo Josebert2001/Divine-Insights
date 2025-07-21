@@ -83,7 +83,7 @@ export function PassageDisplay({
                       <CollapsibleContent className="mt-2">
                         <CrossReferences
                           reference={verseReference}
-                          onSelectReference={(ref) => onSelectReference(ref)}
+                          onSelectReference={(ref) => {}}
                           isDarkTheme={isDarkTheme}
                         />
                       </CollapsibleContent>

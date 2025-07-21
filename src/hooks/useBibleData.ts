@@ -7,6 +7,6 @@ export function useBibleData(version: string) {
     queryKey: ['bibleVersion', version],
     queryFn: () => loadBibleVersion(version),
     staleTime: Infinity, // Bible data doesn't change, so we can cache it indefinitely
-    cacheTime: 1000 * 60 * 60 * 24, // Cache for 24 hours
+    gcTime: 1000 * 60 * 60 * 24, // Cache for 24 hours
   });
 }
