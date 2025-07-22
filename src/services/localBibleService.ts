@@ -71,7 +71,8 @@ const normalizeBookName = (book: string): string => {
     '2john': '2 John',
     '3john': '3 John',
     'jude': 'Jude',
-    'rev': 'Revelation'
+    'rev': 'Revelation of John',
+    'revelation': 'Revelation of John'
   };
 
   // Normalize the input by removing spaces and converting to lowercase
@@ -91,8 +92,20 @@ const normalizeBookName = (book: string): string => {
 
 const findBook = (bibleData: BibleData, bookName: string): { book: any; normalizedName: string } | null => {
   const normalizedBook = normalizeBookName(bookName);
-  const book = bibleData.books.find(b => b.name === normalizedBook);
-  return book ? { book, normalizedName: normalizedBook } : null;
+  
+  // Try exact match first
+  let book = bibleData.books.find(b => b.name === normalizedBook);
+  if (book) {
+    return { book, normalizedName: normalizedBook };
+  }
+  
+  // Try partial match (for cases like "Revelation" matching "Revelation of John")
+  book = bibleData.books.find(b => 
+    b.name.toLowerCase().includes(normalizedBook.toLowerCase()) ||
+    normalizedBook.toLowerCase().includes(b.name.toLowerCase())
+  );
+  
+  return book ? { book, normalizedName: book.name } : null;
 };
 
 export const getPassage = async (reference: string, version: string = 'kjv'): Promise<BiblePassageResponse> => {
