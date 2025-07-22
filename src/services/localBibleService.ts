@@ -72,28 +72,25 @@ const normalizeBookName = (book: string): string => {
     '3john': '3 John',
     'jude': 'Jude',
     'rev': 'Revelation of John',
-    'revelation': 'Revelation of John'
+    'revelation': 'Revelation of John',
+    'revelationofjohn': 'Revelation of John'
   };
 
   // Normalize the input by removing spaces and converting to lowercase
   const normalized = book.toLowerCase().replace(/\s+/g, '');
   console.log("Normalizing book name:", book, "->", normalized);
   
-  // Check for direct match in mappings
+  // Check for direct match in mappings first
   const bookName = bookMappings[normalized];
   if (bookName) {
     console.log("Found mapping:", normalized, "->", bookName);
     return bookName;
   }
 
-  // If no match found, try to find a fuzzy match
-  const matches = Object.values(bookMappings).filter(name => 
-    name.toLowerCase().includes(normalized) || normalized.includes(name.toLowerCase())
-  );
-
-  const result = matches[0] || book;
-  console.log("Fuzzy match result:", result);
-  return result;
+  // If no direct match, return the original book name (don't do fuzzy matching)
+  // This prevents "Revelation of John" from being incorrectly matched to "John"
+  console.log("No mapping found, returning original:", book);
+  return book;
 };
 
 const findBook = (bibleData: BibleData, bookName: string): { book: any; normalizedName: string } | null => {
