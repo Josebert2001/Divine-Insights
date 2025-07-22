@@ -34,6 +34,7 @@ export function ReferenceSelector({
     const loadBooks = async () => {
       try {
         const books = await getAvailableBooks(version);
+        console.log("Available books loaded:", books);
         setAvailableBooks(books);
       } catch (error) {
         console.error("Failed to load books:", error);
@@ -50,7 +51,9 @@ export function ReferenceSelector({
       if (!selectedBook) return;
       
       try {
+        console.log("Loading chapters for book:", selectedBook);
         const chapters = await getAvailableChapters(selectedBook, version);
+        console.log("Available chapters:", chapters);
         setAvailableChapters(chapters);
       } catch (error) {
         console.error("Failed to load chapters:", error);
@@ -76,20 +79,24 @@ export function ReferenceSelector({
   }, [initialReference]);
 
   const handleBookChange = (book: string) => {
+    console.log("Book selected:", book);
     setSelectedBook(book);
     setSelectedChapter("1");
     setSelectedVerse("");
     
     const newRef = `${book} 1`;
+    console.log("Setting reference to:", newRef);
     setReference(newRef);
     onReferenceChange(newRef);
   };
 
   const handleChapterChange = (chapter: string) => {
+    console.log("Chapter selected:", chapter);
     setSelectedChapter(chapter);
     setSelectedVerse("");
     
     const newRef = `${selectedBook} ${chapter}`;
+    console.log("Setting reference to:", newRef);
     setReference(newRef);
     onReferenceChange(newRef);
   };
@@ -103,6 +110,7 @@ export function ReferenceSelector({
 
   const handleDirectReferenceSubmit = () => {
     if (reference.trim()) {
+      console.log("Direct reference submitted:", reference.trim());
       onReferenceChange(reference.trim());
     }
   };
@@ -114,6 +122,7 @@ export function ReferenceSelector({
       ? `${selectedBook} ${selectedChapter}:${selectedVerse}`
       : `${selectedBook} ${selectedChapter}`;
     
+    console.log("Granular reference submitted:", newRef);
     setReference(newRef);
     onReferenceChange(newRef);
   };

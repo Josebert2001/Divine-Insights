@@ -77,25 +77,34 @@ const normalizeBookName = (book: string): string => {
 
   // Normalize the input by removing spaces and converting to lowercase
   const normalized = book.toLowerCase().replace(/\s+/g, '');
+  console.log("Normalizing book name:", book, "->", normalized);
   
   // Check for direct match in mappings
   const bookName = bookMappings[normalized];
-  if (bookName) return bookName;
+  if (bookName) {
+    console.log("Found mapping:", normalized, "->", bookName);
+    return bookName;
+  }
 
   // If no match found, try to find a fuzzy match
   const matches = Object.values(bookMappings).filter(name => 
     name.toLowerCase().includes(normalized) || normalized.includes(name.toLowerCase())
   );
 
-  return matches[0] || book;
+  const result = matches[0] || book;
+  console.log("Fuzzy match result:", result);
+  return result;
 };
 
 const findBook = (bibleData: BibleData, bookName: string): { book: any; normalizedName: string } | null => {
   const normalizedBook = normalizeBookName(bookName);
+  console.log("Looking for book:", bookName, "normalized to:", normalizedBook);
+  console.log("Available books in data:", bibleData.books.map(b => b.name));
   
   // Try exact match first
   let book = bibleData.books.find(b => b.name === normalizedBook);
   if (book) {
+    console.log("Found exact match:", book.name);
     return { book, normalizedName: normalizedBook };
   }
   
@@ -105,11 +114,19 @@ const findBook = (bibleData: BibleData, bookName: string): { book: any; normaliz
     normalizedBook.toLowerCase().includes(b.name.toLowerCase())
   );
   
-  return book ? { book, normalizedName: book.name } : null;
+  if (book) {
+    console.log("Found partial match:", book.name);
+    return { book, normalizedName: book.name };
+  }
+  
+  console.log("No book found for:", bookName);
+  return null;
 };
 
 export const getPassage = async (reference: string, version: string = 'kjv'): Promise<BiblePassageResponse> => {
   try {
+    console.log("Getting passage for reference:", reference, "version:", version);
+    
     // Input validation
     if (!reference || typeof reference !== 'string') {
       return {
@@ -119,8 +136,10 @@ export const getPassage = async (reference: string, version: string = 'kjv'): Pr
       };
     }
 
-    const parts = reference.split(' ');
-    if (parts.length !== 2) {
+    const parts = reference.trim().split(' ');
+    console.log("Reference parts:", parts);
+    
+    if (parts.length < 2) {
       return {
         passage: [],
         reference,
@@ -128,7 +147,20 @@ export const getPassage = async (reference: string, version: string = 'kjv'): Pr
       };
     }
 
-    const [book, chapterVerse] = parts;
+    // Handle multi-word book names like "Revelation of John"
+    let book: string;
+    let chapterVerse: string;
+    
+    if (parts.length === 2) {
+      [book, chapterVerse] = parts;
+    } else {
+      // For multi-word books, join all but the last part as book name
+      book = parts.slice(0, -1).join(' ');
+      chapterVerse = parts[parts.length - 1];
+    }
+    
+    console.log("Parsed book:", book, "chapterVerse:", chapterVerse);
+
     const bibleData = await loadBibleVersion(version);
     if (!bibleData) {
       return {
@@ -261,6 +293,7 @@ export const getPassage = async (reference: string, version: string = 'kjv'): Pr
     };
 
   } catch (error) {
+    console.error("Error in getPassage:", error);
     return {
       passage: [],
       reference: reference,
