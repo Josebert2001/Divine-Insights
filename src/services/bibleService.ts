@@ -72,10 +72,24 @@ export const getAvailableChapters = async (
 ): Promise<number[]> => {
   try {
     const data = await import(`../../bible_data/${version}.json`);
-    const book = data.books.find(b => b.name === bookName);
+    
+    // Find book with exact match or normalized match
+    let book = data.books.find(b => b.name === bookName);
+    
+    // If not found, try normalized matching
+    if (!book) {
+      const normalizedBookName = bookName.toLowerCase().replace(/\s+/g, '');
+      book = data.books.find(b => 
+        b.name.toLowerCase().replace(/\s+/g, '') === normalizedBookName ||
+        b.name.toLowerCase().replace(/\s+/g, '').includes(normalizedBookName) ||
+        normalizedBookName.includes(b.name.toLowerCase().replace(/\s+/g, ''))
+      );
+    }
+    
     if (!book) {
       throw new Error(`Book ${bookName} not found`);
     }
+    
     const chapters = book.chapters.map(ch => ch.chapter);
     return chapters.sort((a, b) => a - b);
   } catch (error) {
